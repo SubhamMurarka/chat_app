@@ -20,9 +20,9 @@ type Message struct {
 	Username string `json:"username"`
 }
 
-func (c *Client) writeMessage() {
+func (c *Client) writeMessage(hub *Hub) {
 	defer func() {
-		c.Conn.Close()
+		hub.Unregister <- c
 	}()
 
 	for {
@@ -38,7 +38,6 @@ func (c *Client) writeMessage() {
 func (c *Client) readMessage(hub *Hub) {
 	defer func() {
 		hub.Unregister <- c
-		c.Conn.Close()
 	}()
 
 	for {

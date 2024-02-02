@@ -75,8 +75,8 @@ func (h *Handler) JoinRoom(c *gin.Context) {
 	h.hub.Register <- cl
 	h.hub.Broadcast <- m
 
-	go cl.writeMessage()
-	cl.readMessage(h.hub)
+	go cl.writeMessage(h.hub)
+	go cl.readMessage(h.hub)
 }
 
 type RoomRes struct {

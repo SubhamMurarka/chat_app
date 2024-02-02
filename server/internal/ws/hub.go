@@ -1,5 +1,7 @@
 package ws
 
+import "sync"
+
 type Room struct {
 	ID      string             `json:"id"`
 	Name    string             `json:"name"`
@@ -11,6 +13,7 @@ type Hub struct {
 	Register   chan *Client
 	Unregister chan *Client
 	Broadcast  chan *Message
+	sync.RWMutex
 }
 
 func NewHub() *Hub {
@@ -26,6 +29,9 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case cl := <-h.Register:
+			h.Lock()
+			defer h.Unlock()
+
 			if _, ok := h.Rooms[cl.RoomID]; ok {
 				r := h.Rooms[cl.RoomID]
 
@@ -35,6 +41,9 @@ func (h *Hub) Run() {
 			}
 
 		case cl := <-h.Unregister:
+			h.Lock()
+			defer h.Unlock()
+
 			if _, ok := h.Rooms[cl.RoomID]; ok {
 				if _, ok := h.Rooms[cl.RoomID].Clients[cl.ID]; ok {
 					if len(h.Rooms[cl.RoomID].Clients) != 0 {
@@ -47,10 +56,14 @@ func (h *Hub) Run() {
 
 					delete(h.Rooms[cl.RoomID].Clients, cl.ID)
 					close(cl.Message)
+					cl.Conn.Close()
 				}
 			}
 
 		case m := <-h.Broadcast:
+			h.Lock()
+			defer h.Unlock()
+
 			if _, ok := h.Rooms[m.RoomID]; ok {
 
 				for _, cl := range h.Rooms[m.RoomID].Clients {
