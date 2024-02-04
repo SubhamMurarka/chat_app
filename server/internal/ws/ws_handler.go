@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -117,4 +118,24 @@ func (h *Handler) GetClients(c *gin.Context) {
 		})
 	}
 	c.JSON(http.StatusOK, clients)
+}
+
+func (h *Handler) ImageUpload(c *gin.Context) {
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errors.New("resend image")})
+		return
+	}
+
+	file := form.File["files"]
+
+	// TODO can't interrupt process for single if array of images
+	for key, val := range file {
+		err := saveFile(val, key)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "saving image error"})
+			return
+		}
+	}
+	c.JSON(http.StatusOK, nil)
 }
