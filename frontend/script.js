@@ -45,8 +45,7 @@ function login() {
 
     // Make a POST request to the backend /login endpoint
     fetch('/login', {
-        method: 'POST',
-        headers: {
+        method: 'POST'{
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(loginData),

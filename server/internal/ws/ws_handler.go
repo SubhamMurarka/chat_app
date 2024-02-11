@@ -121,6 +121,8 @@ func (h *Handler) GetClients(c *gin.Context) {
 }
 
 func (h *Handler) ImageUpload(c *gin.Context) {
+	// var urls []string
+
 	form, err := c.MultipartForm()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errors.New("resend image")})
@@ -130,12 +132,24 @@ func (h *Handler) ImageUpload(c *gin.Context) {
 	file := form.File["files"]
 
 	// TODO can't interrupt process for single if array of images
-	for key, val := range file {
-		err := saveFile(val, key)
+	// var url string
+	// var url string
+
+	for _, fileHeader := range file {
+		f, err := fileHeader.Open()
+		defer f.Close()
+
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "saving image error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		err = SaveFile(f, fileHeader)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	}
+
 	c.JSON(http.StatusOK, nil)
 }

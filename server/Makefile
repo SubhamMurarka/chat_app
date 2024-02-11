@@ -16,4 +16,7 @@ migrateup:
 migratedown:
 	migrate -path db/migrations -database "postgresql://root:password@localhost:5435/go-chat?sslmode=disable" -verbose down
 
-.PHONY: postgresinit createdb postgres dropdb migrateup migratedown
+localstackinit:
+	sudo docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack
+
+.PHONY: postgresinit createdb postgres dropdb migrateup migratedown localstackinit
