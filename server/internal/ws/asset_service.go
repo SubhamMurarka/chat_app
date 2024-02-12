@@ -8,33 +8,35 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-func SaveFile(src io.Reader, fileHeader *multipart.FileHeader) error {
+func SaveFile(src io.Reader, fileHeader *multipart.FileHeader) (string, error) {
 	fileName := fileHeader.Filename
 	fmt.Println(fileName)
+	fileName = strings.ReplaceAll(fileName, " ", "")
 
 	path := filepath.Join("/home/murarka/chat_app/server/uploads", fileName)
 	save, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("error saving image: %v", err)
+		return "", fmt.Errorf("error saving image: %v", err)
 	}
 	defer save.Close()
 
 	if _, err := io.Copy(save, src); err != nil {
-		return fmt.Errorf("error saving image: %v", err)
+		return "", fmt.Errorf("error saving image: %v", err)
 	}
 
-	err = UploadtoS3(fileName, path)
+	url, err := UploadtoS3(fileName, path)
 	if err != nil {
-		return fmt.Errorf("error uploading to S3: %v", err)
+		return "", fmt.Errorf("error uploading to S3: %v", err)
 	}
 
-	return err
+	return url, nil
 }
 
 var (
@@ -71,11 +73,11 @@ func init() {
 	})
 }
 
-func UploadtoS3(filename string, path string) error {
+func UploadtoS3(filename string, path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Printf("unable to upload file %v", err)
-		return err
+		return "", err
 	}
 	defer file.Close()
 
@@ -87,7 +89,11 @@ func UploadtoS3(filename string, path string) error {
 
 	if err != nil {
 		log.Printf("unable to upload file %v", err)
+		return "", err
 	}
+	url := fmt.Sprintf("http://localhost:4566/%s/%s", bucketName, filename)
 
-	return err
+	return url, nil
 }
+
+//TODO DELETE FILE FROM DEVICE AFTER SUCCESSFUL ENTRY IN LOCALSTACK

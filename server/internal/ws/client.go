@@ -15,9 +15,10 @@ type Client struct {
 }
 
 type Message struct {
-	Content  string `json:"content"`
-	RoomID   string `json:"roomId"`
-	Username string `json:"username"`
+	Content  string   `json:"content"`
+	RoomID   string   `json:"roomId"`
+	Username string   `json:"username"`
+	ImageURL []string `json:"imageurl,omitempty"`
 }
 
 func (c *Client) writeMessage(hub *Hub) {

@@ -3,6 +3,7 @@ package ws
 import (
 	"errors"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -121,8 +122,6 @@ func (h *Handler) GetClients(c *gin.Context) {
 }
 
 func (h *Handler) ImageUpload(c *gin.Context) {
-	// var urls []string
-
 	form, err := c.MultipartForm()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errors.New("resend image")})
@@ -132,8 +131,10 @@ func (h *Handler) ImageUpload(c *gin.Context) {
 	file := form.File["files"]
 
 	// TODO can't interrupt process for single if array of images
-	// var url string
-	// var url string
+	var urls []string
+
+	username := c.Request.Header.Get("Username")
+	roomid := c.Request.Header.Get("RoomID")
 
 	for _, fileHeader := range file {
 		f, err := fileHeader.Open()
@@ -144,12 +145,30 @@ func (h *Handler) ImageUpload(c *gin.Context) {
 			return
 		}
 
-		err = SaveFile(f, fileHeader)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+		//checking extension of file
+		extension := filepath.Ext(fileHeader.Filename)
+		if extension != ".jpg" && extension != ".jpeg" && extension != ".png" {
+			urls = append(urls, "Error: invalid file format")
+			continue
 		}
+
+		//saving file to file storage temporarily and then to s3
+		url, err := SaveFile(f, fileHeader)
+		if err != nil {
+			urls = append(urls, "Error:"+err.Error())
+			continue
+		}
+
+		urls = append(urls, url)
 	}
 
-	c.JSON(http.StatusOK, nil)
+	m := &Message{
+		Username: username,
+		RoomID:   roomid,
+		ImageURL: urls,
+	}
+
+	h.hub.Broadcast <- m
+
+	// c.JSON(http.StatusOK, urls)
 }
