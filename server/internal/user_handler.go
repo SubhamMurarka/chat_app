@@ -1,8 +1,9 @@
-package user
+package internal
 
 import (
 	"net/http"
 
+	"github.com/SubhamMurarka/chat_app/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,7 +18,7 @@ func NewHandler(s Service) *Handler {
 }
 
 func (h *Handler) CreateUser(c *gin.Context) {
-	var u CreateUserReq
+	var u models.CreateUserReq
 	if err := c.ShouldBindJSON(&u); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -33,7 +34,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 }
 
 func (h *Handler) Login(c *gin.Context) {
-	var user LoginUserReq
+	var user models.LoginUserReq
 
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

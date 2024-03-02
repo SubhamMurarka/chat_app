@@ -1,4 +1,4 @@
-package user
+package internal
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/SubhamMurarka/chat_app/models"
 	"github.com/SubhamMurarka/chat_app/util"
 )
 
@@ -17,11 +18,11 @@ type service struct {
 func NewService(repository Repository) Service {
 	return &service{
 		repository,
-		time.Duration(2) * time.Second,
+		time.Duration(8) * time.Second,
 	}
 }
 
-func (s *service) CreateUser(c context.Context, req *CreateUserReq) (*CreateUserRes, error) {
+func (s *service) CreateUser(c context.Context, req *models.CreateUserReq) (*models.CreateUserRes, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
@@ -36,7 +37,7 @@ func (s *service) CreateUser(c context.Context, req *CreateUserReq) (*CreateUser
 	}
 
 	if exists {
-		return nil, errors.New("Email already exists")
+		return nil, errors.New("email already exists")
 	}
 
 	exists, err = s.Repository.FindUserByName(ctx, req.Username)
@@ -54,7 +55,7 @@ func (s *service) CreateUser(c context.Context, req *CreateUserReq) (*CreateUser
 		return nil, err
 	}
 
-	u := &User{
+	u := &models.User{
 		Username: req.Username,
 		Email:    req.Email,
 		Password: hashedPassword,
@@ -66,7 +67,7 @@ func (s *service) CreateUser(c context.Context, req *CreateUserReq) (*CreateUser
 		return nil, err
 	}
 
-	res := &CreateUserRes{
+	res := &models.CreateUserRes{
 		ID:       strconv.Itoa(int(r.ID)),
 		Username: r.Username,
 		Email:    r.Email,
@@ -74,27 +75,27 @@ func (s *service) CreateUser(c context.Context, req *CreateUserReq) (*CreateUser
 	return res, nil
 }
 
-func (s *service) Login(c context.Context, req *LoginUserReq) (*LoginUserRes, error) {
+func (s *service) Login(c context.Context, req *models.LoginUserReq) (*models.LoginUserRes, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
 	u, err := s.Repository.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		return &LoginUserRes{}, errors.New("invalid credentials")
+		return &models.LoginUserRes{}, errors.New("invalid credentials")
 	}
 
 	err = util.CheckPassword(req.Password, u.Password)
 	if err != nil {
-		return &LoginUserRes{}, errors.New("invalid credentials")
+		return &models.LoginUserRes{}, errors.New("invalid credentials")
 	}
 
-	token, err := util.GenerateAllTokens(u.Username, u.Email)
+	token, err := util.GenerateAllTokens(strconv.FormatInt(u.ID, 10), u.Username, u.Email)
 
 	if err != nil {
-		return &LoginUserRes{}, errors.New("try to login again")
+		return &models.LoginUserRes{}, errors.New("try to login again")
 	}
 
-	logRes := &LoginUserRes{
+	logRes := &models.LoginUserRes{
 		ID:       strconv.Itoa(int(u.ID)),
 		Username: u.Username,
 		Token:    token,

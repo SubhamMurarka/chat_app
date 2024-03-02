@@ -19,4 +19,8 @@ migratedown:
 localstackinit:
 	sudo docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack
 
-.PHONY: postgresinit createdb postgres dropdb migrateup migratedown localstackinit
+redisinit:
+	sudo docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
+
+
+.PHONY: postgresinit createdb postgres dropdb migrateup migratedown localstackinit redisinit

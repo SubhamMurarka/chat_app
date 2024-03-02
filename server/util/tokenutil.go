@@ -12,15 +12,17 @@ import (
 type tokenCreateParams struct {
 	Username string
 	Email    string
+	UserID   string
 	jwt.StandardClaims
 }
 
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
 
-func GenerateAllTokens(username string, email string) (signedToken string, err error) {
+func GenerateAllTokens(userID string, username string, email string) (signedToken string, err error) {
 	claims := &tokenCreateParams{
 		Username: username,
 		Email:    email,
+		UserID:   userID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().UTC().Add(time.Minute * time.Duration(10)).Unix(),
 		},

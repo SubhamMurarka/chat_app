@@ -4,24 +4,25 @@ import (
 	"log"
 
 	"github.com/SubhamMurarka/chat_app/db"
-	"github.com/SubhamMurarka/chat_app/internal/user"
-	"github.com/SubhamMurarka/chat_app/internal/ws"
+	"github.com/SubhamMurarka/chat_app/internal"
+	"github.com/SubhamMurarka/chat_app/reddis"
 	"github.com/SubhamMurarka/chat_app/router"
 )
 
 func main() {
+	reddis.InitRedis()
+
 	dbConn, err := db.NewDatabase()
 	if err != nil {
 		log.Fatalf("could not initialiaze database connection: %s", err)
 	}
 
-	userRep := user.NewRepository(dbConn.GetDB())
-	userSvc := user.NewService(userRep)
-	userHandler := user.NewHandler(userSvc)
+	Rep := internal.NewRepository(dbConn.GetDB())
+	userSvc := internal.NewService(Rep)
+	userHandler := internal.NewHandler(userSvc)
 
-	hub := ws.NewHub()
-	wsHandler := ws.NewHandler(hub)
-	go hub.Run()
+	wsSvc := internal.NewwsService(Rep)
+	wsHandler := internal.NewWsHandler(wsSvc)
 
 	router.InitRouter(userHandler, wsHandler)
 

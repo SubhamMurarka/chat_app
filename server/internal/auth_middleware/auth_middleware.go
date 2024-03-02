@@ -1,4 +1,4 @@
-package auth
+package internal
 
 import (
 	"fmt"
@@ -31,6 +31,7 @@ func Authenticate() gin.HandlerFunc {
 
 		c.Set("email", claims.Email)
 		c.Set("username", claims.Username)
+		c.Set("userid", claims.UserID)
 		c.Next()
 	}
 }

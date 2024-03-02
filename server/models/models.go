@@ -1,6 +1,6 @@
-package user
+package models
 
-import "context"
+import "github.com/gorilla/websocket"
 
 type User struct {
 	ID       int64  `json:"id" db:"id"`
@@ -32,19 +32,22 @@ type LoginUserRes struct {
 	Token    string `json:"token"`
 }
 
-// type authentication struct {
-// 	Token string `json:"token"`
-// }
-
-type Repository interface {
-	CreateUser(ctx context.Context, user *User) (*User, error)
-	GetUserByEmail(ctx context.Context, email string) (*User, error)
-	FindUserByName(ctx context.Context, username string) (bool, error)
-	FindUserByEmail(ctx context.Context, email string) (bool, error)
-	// UpdateAllTokens(ctx context.Context, token string, refreshToken string, email string) (*User, error)
+type Client struct {
+	Conn     *websocket.Conn
+	Message  *Message
+	ID       string `json:"id"`
+	RoomID   string `json:"roomid"`
+	Username string `json:"username"`
 }
 
-type Service interface {
-	CreateUser(c context.Context, req *CreateUserReq) (*CreateUserRes, error)
-	Login(c context.Context, req *LoginUserReq) (*LoginUserRes, error)
+type Message struct {
+	Content     string   `json:"content"`
+	RoomID      string   `json:"roomId"`
+	Username    string   `json:"username"`
+	UserID      string   `json:"userid"`
+	Server      string   `json:"server"`
+	MessageType string   `json:"messagetype"`
+	ImageUrl    []string `json:"imageurl,omitempty"`
 }
+
+type MessageHandlerCallbackType func(room string, message *Message)
