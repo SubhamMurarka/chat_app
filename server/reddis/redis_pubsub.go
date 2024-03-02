@@ -12,9 +12,7 @@ import (
 var roomsMutex = &sync.Mutex{}
 var roomsSubscribed = make(map[string]bool)
 
-// var s = time.Duration(8) * time.Hour
-
-// var once = &sync.Once{}
+var once = &sync.Once{}
 
 var messageHandlerCallback models.MessageHandlerCallbackType
 
@@ -32,7 +30,9 @@ func SubscribeRoom(c context.Context, room string, callback models.MessageHandle
 		messageHandlerCallback = callback
 
 		// firing listenformessages once for every server
-		go listenMessages()
+		once.Do(func() {
+			go listenMessages()
+		})
 	}
 }
 
