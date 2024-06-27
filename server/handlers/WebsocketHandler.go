@@ -52,7 +52,7 @@ func (h *WsHandler) ImageUpload(c *gin.Context) {
 	// TODO can't interrupt process for single if array of images
 	var urls []string
 
-	username := c.Request.Header.Get("Username")
+	username := c.GetString("username")
 	roomid := c.Request.Header.Get("RoomID")
 
 	for _, fileHeader := range file {

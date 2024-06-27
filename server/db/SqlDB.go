@@ -7,24 +7,24 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type Database struct {
+type SQLDatabase struct {
 	db *sql.DB
 }
 
-func NewDatabase() (*Database, error) {
+func NewSQLDatabase() (*SQLDatabase, error) {
 	db, err := sql.Open("postgres", "postgres://root:password@localhost:5435/go-chat?sslmode=disable")
 	if err != nil {
 		return nil, err
 	}
 
-	return &Database{db: db}, nil
+	return &SQLDatabase{db: db}, nil
 }
 
-func (d *Database) GetDB() *sql.DB {
+func (d *SQLDatabase) GetDB() *sql.DB {
 	return d.db
 }
 
-func (d *Database) Close() {
+func (d *SQLDatabase) Close() {
 	d.db.Close()
 }
 
@@ -34,5 +34,3 @@ type DBTX interface {
 	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
 	QueryRowContext(context.Context, string, ...interface{}) *sql.Row
 }
-
-

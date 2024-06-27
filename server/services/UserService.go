@@ -1,36 +1,39 @@
-package internal
+package services
 
 import (
 	"context"
 	"errors"
 	"strconv"
-	"time"
 
 	"github.com/SubhamMurarka/chat_app/models"
+	"github.com/SubhamMurarka/chat_app/repositories"
 	"github.com/SubhamMurarka/chat_app/util"
 )
 
-type service struct {
-	Repository
-	timeout time.Duration
+type UserService interface {
+	CreateUser(c context.Context, req *models.CreateUserReq) (*models.CreateUserRes, error)
+	Login(c context.Context, req *models.LoginUserReq) (*models.LoginUserRes, error)
 }
 
-func NewService(repository Repository) Service {
-	return &service{
-		repository,
-		time.Duration(8) * time.Second,
+type userService struct {
+	repo repositories.UserRepository
+}
+
+func NewUserService(userRepository repositories.UserRepository) UserService {
+	return &userService{
+		repo: userRepository,
 	}
 }
 
-func (s *service) CreateUser(c context.Context, req *models.CreateUserReq) (*models.CreateUserRes, error) {
-	ctx, cancel := context.WithTimeout(c, s.timeout)
-	defer cancel()
+func (s *userService) CreateUser(c context.Context, req *models.CreateUserReq) (*models.CreateUserRes, error) {
+	// ctx, cancel := context.WithTimeout(c, s.timeout)
+	// defer cancel()
 
 	if req.Email == "" || req.Username == "" {
 		return nil, errors.New("email and username cannot be empty")
 	}
 
-	exists, err := s.Repository.FindUserByEmail(ctx, req.Email)
+	exists, err := s.repo.FindUserByEmail(c, req.Email)
 
 	if err != nil {
 		return nil, err
@@ -40,7 +43,7 @@ func (s *service) CreateUser(c context.Context, req *models.CreateUserReq) (*mod
 		return nil, errors.New("email already exists")
 	}
 
-	exists, err = s.Repository.FindUserByName(ctx, req.Username)
+	exists, err = s.repo.FindUserByName(c, req.Username)
 
 	if err != nil {
 		return nil, err
@@ -61,7 +64,7 @@ func (s *service) CreateUser(c context.Context, req *models.CreateUserReq) (*mod
 		Password: hashedPassword,
 	}
 
-	r, err := s.Repository.CreateUser(ctx, u)
+	r, err := s.repo.CreateUser(c, u)
 
 	if err != nil {
 		return nil, err
@@ -75,11 +78,11 @@ func (s *service) CreateUser(c context.Context, req *models.CreateUserReq) (*mod
 	return res, nil
 }
 
-func (s *service) Login(c context.Context, req *models.LoginUserReq) (*models.LoginUserRes, error) {
-	ctx, cancel := context.WithTimeout(c, s.timeout)
-	defer cancel()
+func (s *userService) Login(c context.Context, req *models.LoginUserReq) (*models.LoginUserRes, error) {
+	// ctx, cancel := context.WithTimeout(c, s.timeout)
+	// defer cancel()
 
-	u, err := s.Repository.GetUserByEmail(ctx, req.Email)
+	u, err := s.repo.GetUserByEmail(c, req.Email)
 	if err != nil {
 		return &models.LoginUserRes{}, errors.New("invalid credentials")
 	}

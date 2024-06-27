@@ -1,24 +1,34 @@
-package internal
+package services
 
 import (
 	"context"
 	"fmt"
 	"log"
 
+	"github.com/SubhamMurarka/chat_app/helpers"
 	"github.com/SubhamMurarka/chat_app/models"
-	"github.com/SubhamMurarka/chat_app/reddis"
+	"github.com/SubhamMurarka/chat_app/repositories"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
+type WsService interface {
+	JoinRoomService(c context.Context, cl *models.Client)
+	SendMessage(c context.Context, cl *models.Client, message models.Message)
+	Broadcast(c context.Context, room string, msg models.Message)
+	handleWebSocket(conn *websocket.Conn, c *gin.Context)
+}
+
 type wsService struct {
-	Repository
+	roomrepo   repositories.RoomRepository
+	pubsubrepo repositories.PubSubRepository
 	// timeout time.Duration
 }
 
-func NewwsService(repository Repository) WsService {
+func NewwsService(roomRepository repositories.RoomRepository, pubsubRepository repositories.PubSubRepository) WsService {
 	return &wsService{
-		repository,
+		roomrepo:   roomRepository,
+		pubsubrepo: pubsubRepository,
 		// time.Duration(8) * time.Hour,
 	}
 }
@@ -33,7 +43,7 @@ func (s *wsService) handleWebSocket(conn *websocket.Conn, c *gin.Context) {
 		Username: clientName,
 	}
 
-	AddConnection(clientID, conn)
+	helpers.AddConnection(clientID, conn)
 
 	for {
 		var message models.Message
@@ -62,13 +72,13 @@ func (s *wsService) JoinRoomService(c context.Context, cl *models.Client) {
 	// defer cancel()
 
 	room := cl.RoomID
-	err := s.Repository.AddUserToRoomRedis(c, room, cl)
+	err := s.roomrepo.AddUserToRoomRedis(c, room, cl)
 	if err != nil {
 		cl.Conn.WriteJSON(err.Error())
 		return
 	}
 
-	reddis.SubscribeRoom(c, room, func(room string, message *models.Message) {
+	s.pubsubrepo.SubscribeRoom(c, room, func(room string, message *models.Message) {
 		s.Broadcast(c, room, *message)
 	})
 
@@ -79,7 +89,7 @@ func (s *wsService) JoinRoomService(c context.Context, cl *models.Client) {
 		MessageType: "join_room",
 	}
 
-	reddis.PublishMessage(c, room, &message)
+	s.pubsubrepo.PublishMessage(c, room, &message)
 
 	response := map[string]interface{}{
 		"type":    "join_room",
@@ -95,16 +105,16 @@ func (s *wsService) JoinRoomService(c context.Context, cl *models.Client) {
 func (s *wsService) Broadcast(c context.Context, room string, msg models.Message) {
 	// ctx, cancel := context.WithTimeout(c, s.timeout)
 	// defer cancel()
-	users := s.Repository.GetAllMembersRedis(c, room)
+	users := s.roomrepo.GetAllMembersRedis(c, room)
 
 	for _, userID := range users {
 
-		if conn, ok := GetConnection(userID); ok {
+		if conn, ok := helpers.GetConnection(userID); ok {
 			if err := conn.WriteJSON(msg); err != nil {
 				// handle error
 				fmt.Printf("error in writing to connection")
 				conn.Close()
-				RemoveConnection(userID)
+				helpers.RemoveConnection(userID)
 			}
 		}
 	}
@@ -114,5 +124,5 @@ func (s *wsService) SendMessage(c context.Context, cl *models.Client, message mo
 	// ctx, cancel := context.WithTimeout(c, s.timeout)
 	// defer cancel()
 
-	reddis.PublishMessage(c, cl.RoomID, &message)
+	s.pubsubrepo.PublishMessage(c, cl.RoomID, &message)
 }

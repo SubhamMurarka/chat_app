@@ -12,7 +12,6 @@ func InitRouter(userHandler *internal.Handler, wsHandler *internal.WsHandler) {
 	r = gin.Default()
 	// r.Static("/home", "/home/murarka/chat_app/frontend")
 
-	r.Use(gin.Logger())
 	r.POST("/signup", userHandler.CreateUser)
 	r.POST("/login", userHandler.Login)
 

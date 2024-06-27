@@ -5,23 +5,33 @@ import (
 
 	"github.com/SubhamMurarka/chat_app/db"
 	"github.com/SubhamMurarka/chat_app/internal"
-	"github.com/SubhamMurarka/chat_app/reddis"
+	"github.com/SubhamMurarka/chat_app/repositories"
 	"github.com/SubhamMurarka/chat_app/router"
+	"github.com/SubhamMurarka/chat_app/services"
 )
 
 func main() {
-	reddis.InitRedis()
+	// Initialize Redis
+	redisClient, err := db.NewRedisDatabase()
+	if err != nil {
+		log.Fatalf("could not initialize Redis connection: %s", err)
+	}
 
-	dbConn, err := db.NewDatabase()
+	// Initialize postgres
+	dbConn, err := db.NewSQLDatabase()
 	if err != nil {
 		log.Fatalf("could not initialiaze database connection: %s", err)
 	}
 
-	Rep := internal.NewRepository(dbConn.GetDB())
-	userSvc := internal.NewService(Rep)
-	userHandler := internal.NewHandler(userSvc)
+	// Initialize Repositories
+	userRepo := repositories.NewUserRepository(dbConn.GetDB())
+	roomRepo := repositories.NewRoomRepository(redisClient.GetClient())
+	pubsubRepo := repositories.NewPubSubRepository(redisClient.GetPubSub(), redisClient.GetClient())
 
-	wsSvc := internal.NewwsService(Rep)
+	userSvc := services.NewUserService(userRepo)
+	userHandler := .NewHandler(userSvc)
+
+	wsSvc := services.NewwsService(roomRepo, pubsubRepo)
 	wsHandler := internal.NewWsHandler(wsSvc)
 
 	router.InitRouter(userHandler, wsHandler)
