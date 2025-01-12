@@ -11,6 +11,4 @@ The Heartbeat Service in our chat application plays a crucial role in monitoring
 - **Subscriber Actions**: Services subscribed to the HEARTBEAT channel listen for these messages and update the Time-To-Live (TTL) of each user's session in Redis. Maintaining a connection pool with redis.
 - **Connection Monitoring**: The chat server is also subscribed to a Redis channel that notifies about TTL expirations (`__keyevent@0__:expired`). If a user's TTL expires (indicating inactivity), the chat server receives this expiration event and terminates the inactive connection, ensuring system resources are efficiently managed.
 
-
-![Heartbeat Service Diagram]! ![Chat Server (1)](https://github.com/user-attachments/assets/f110e785-8a59-47c5-8cea-646d85ff1e9e)
-
+![Heartbeat Service Diagram]!![Chat Server (2)](https://github.com/user-attachments/assets/5d7cbbbb-226e-4000-a7b6-bcb8447f8249)
