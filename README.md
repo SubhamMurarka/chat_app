@@ -3,7 +3,7 @@
 ## Heartbeat Service
 
 ### Maintaining User Connections with Heartbeat Messages
-The Heartbeat Service in our chat application plays a crucial role in monitoring user activity and managing connection states. This service ensures that the application can handle user presence and disconnections gracefully.
+The Heartbeat Service in our chat application plays a crucial role in managing connection states. This service ensures that the application can handle user presence and disconnections gracefully.
 
 #### How It Works
 - **Ping/Pong Mechanism**: The client (frontend) sends a 'ping' message at regular intervals to the chat server via a WebSocket connection. In response, the server sends back a 'pong' message, confirming the connection's activeness.
