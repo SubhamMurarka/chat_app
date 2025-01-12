@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"log"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -16,6 +17,7 @@ func NewRedisDatabase() (*RedisDatabase, error) {
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       0,
+		PoolSize: 5,
 	})
 
 	ctx := context.Background()
@@ -23,7 +25,14 @@ func NewRedisDatabase() (*RedisDatabase, error) {
 		return nil, err
 	}
 
+	err := client.ConfigSet(ctx, "notify-keyspace-events", "Ex").Err()
+	if err != nil {
+		log.Println("Error configuring for notifying ttl")
+		return nil, err
+	}
+
 	pubSub := client.Subscribe(ctx)
+	pubSub.Subscribe(ctx, "__keyevent@0__:expired")
 
 	return &RedisDatabase{client: client, pubSub: pubSub}, nil
 }

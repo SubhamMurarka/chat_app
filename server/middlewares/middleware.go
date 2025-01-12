@@ -1,13 +1,26 @@
-package internal
+package middleware
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
-	"github.com/SubhamMurarka/chat_app/util"
+	"github.com/golang-jwt/jwt"
+
 	"github.com/gin-gonic/gin"
 )
+
+var SECRET_KEY string = os.Getenv("SECRET_KEY")
+
+type tokenCreateParams struct {
+	Username string
+	Email    string
+	UserID   string
+	jwt.StandardClaims
+}
 
 func Authenticate() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -18,7 +31,7 @@ func Authenticate() gin.HandlerFunc {
 			return
 		}
 
-		claims, err := util.ValidateToken(clientToken)
+		claims, err := ValidateToken(clientToken)
 		if err != nil {
 			if strings.Contains(err.Error(), "token is expired") {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Token is expired"})
@@ -29,9 +42,33 @@ func Authenticate() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("email", claims.Email)
-		c.Set("username", claims.Username)
 		c.Set("userid", claims.UserID)
 		c.Next()
 	}
+}
+
+func ValidateToken(signedToken string) (*tokenCreateParams, error) {
+	token, err := jwt.ParseWithClaims(
+		signedToken,
+		&tokenCreateParams{},
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(SECRET_KEY), nil
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*tokenCreateParams)
+
+	if !ok {
+		return nil, errors.New("the token is invalid")
+	}
+
+	if claims.ExpiresAt < time.Now().UTC().Unix() {
+		return nil, errors.New("token is expired")
+	}
+
+	return claims, nil
 }

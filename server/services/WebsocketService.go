@@ -1,128 +1,160 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
-	"github.com/SubhamMurarka/chat_app/helpers"
-	"github.com/SubhamMurarka/chat_app/models"
-	"github.com/SubhamMurarka/chat_app/repositories"
+	"github.com/SubhamMurarka/chat_app/server/AbuseMasking"
+	"github.com/SubhamMurarka/chat_app/server/config"
+	"github.com/SubhamMurarka/chat_app/server/helpers"
+	"github.com/SubhamMurarka/chat_app/server/kafka"
+	"github.com/SubhamMurarka/chat_app/server/models"
+	"github.com/SubhamMurarka/chat_app/server/repositories"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
 type WsService interface {
-	JoinRoomService(c context.Context, cl *models.Client)
-	SendMessage(c context.Context, cl *models.Client, message models.Message)
-	Broadcast(c context.Context, room string, msg models.Message)
-	handleWebSocket(conn *websocket.Conn, c *gin.Context)
+	JoinRoomService(c context.Context, cl *models.Client, message *models.Message)
+	SendMessage(c context.Context, cl *models.Client, message *models.Message)
+	Broadcast(c context.Context, room string, channelID int64, msg *models.Message)
+	HandleWebSocket(c *gin.Context, cl *models.Client)
+	HeartBeat(c context.Context, cl *models.Client, msg *models.Message)
 }
 
 type wsService struct {
-	roomrepo   repositories.RoomRepository
 	pubsubrepo repositories.PubSubRepository
-	// timeout time.Duration
+	location   *helpers.Location
 }
 
-func NewwsService(roomRepository repositories.RoomRepository, pubsubRepository repositories.PubSubRepository) WsService {
+func NewwsService(pubsubRepository repositories.PubSubRepository, loc *helpers.Location) WsService {
 	return &wsService{
-		roomrepo:   roomRepository,
 		pubsubrepo: pubsubRepository,
-		// time.Duration(8) * time.Hour,
+		location:   loc,
 	}
 }
 
-func (s *wsService) handleWebSocket(conn *websocket.Conn, c *gin.Context) {
-	clientID := c.GetString("userid")
-	clientName := c.GetString("username")
+func (s *wsService) HandleWebSocket(c *gin.Context, cl *models.Client) {
+	defer cl.Conn.Close() // Ensure the connection is closed when done
 
-	cl := &models.Client{
-		Conn:     conn,
-		ID:       clientID,
-		Username: clientName,
+	server := config.Config.ServerID
+	log.Printf("Server ID: %s", server)
+
+	joinMessage := &models.Message{
+		Server:      server,
+		UserID:      cl.ClientID,
+		ChannelID:   cl.ChannelID,
+		EventType:   "join_room",
+		Content:     fmt.Sprintf("%v joined", cl.UserName),
+		MessageType: "TEXT",
 	}
-
-	helpers.AddConnection(clientID, conn)
+	s.JoinRoomService(c, cl, joinMessage)
 
 	for {
 		var message models.Message
+		message.Server = server
+		message.ChannelID = cl.ChannelID
+		message.UserID = cl.ClientID
 
-		err := conn.ReadJSON(&message)
-		if err != nil {
-			conn.WriteJSON(err.Error())
-			return
+		log.Println("Waiting for client message...")
+		if err := cl.Conn.ReadJSON(&message); err != nil {
+			log.Printf("Error reading message: %v", err)
+			break
 		}
 
-		message.UserID = clientID
-		message.Username = clientName
-		cl.RoomID = message.RoomID
-
-		switch message.MessageType {
-		case "join_room":
-			s.JoinRoomService(context.Background(), cl)
-		case "chat":
-			s.SendMessage(context.Background(), cl, message)
-		}
+		log.Printf("Received message: %v", message.Content)
+		s.handleMessage(c, cl, &message)
 	}
 }
 
-func (s *wsService) JoinRoomService(c context.Context, cl *models.Client) {
-	// ctx, cancel := context.WithTimeout(c, s.timeout)
-	// defer cancel()
-
-	room := cl.RoomID
-	err := s.roomrepo.AddUserToRoomRedis(c, room, cl)
-	if err != nil {
-		cl.Conn.WriteJSON(err.Error())
-		return
+func (s *wsService) handleMessage(c context.Context, cl *models.Client, message *models.Message) {
+	switch message.EventType {
+	case "chat":
+		message.Content = AbuseMasking.Filter(message.Content)
+		s.SendMessage(c, cl, message)
+	case "heartbeat":
+		s.HeartBeat(c, cl, message)
+	default:
+		log.Printf("Unknown event type: %v", message.EventType)
 	}
+}
 
-	s.pubsubrepo.SubscribeRoom(c, room, func(room string, message *models.Message) {
-		s.Broadcast(c, room, *message)
+func (s *wsService) JoinRoomService(c context.Context, cl *models.Client, message *models.Message) {
+	s.location.AddUserToRoom(cl.ChannelID, cl.ClientID, cl.Conn)
+
+	// Subscribe to room
+	s.pubsubrepo.SubscribeRoom(c, cl.RoomName, cl.ChannelID, func(room string, channelID int64, msg *models.Message) {
+		s.Broadcast(c, room, channelID, msg)
 	})
 
-	message := models.Message{
-		RoomID:      cl.RoomID,
-		Username:    cl.Username,
-		UserID:      cl.ID,
-		MessageType: "join_room",
-	}
-
-	s.pubsubrepo.PublishMessage(c, room, &message)
+	// Broadcast join message
+	s.Broadcast(c, cl.RoomName, cl.ChannelID, message)
+	s.pubsubrepo.PublishMessage(c, cl.RoomName, cl.ChannelID, message)
 
 	response := map[string]interface{}{
 		"type":    "join_room",
-		"room":    room,
+		"room":    cl.RoomName,
 		"success": true,
 	}
-
 	if err := cl.Conn.WriteJSON(response); err != nil {
-		log.Printf("%s", err)
+		log.Printf("Error sending join_room response: %v", err)
 	}
+
+	s.HeartBeat(c, cl, message) // Send initial heartbeat
 }
 
-func (s *wsService) Broadcast(c context.Context, room string, msg models.Message) {
-	// ctx, cancel := context.WithTimeout(c, s.timeout)
-	// defer cancel()
-	users := s.roomrepo.GetAllMembersRedis(c, room)
+func (s *wsService) Broadcast(c context.Context, room string, channelID int64, msg *models.Message) {
+	users, exists := s.location.FetchUsersInRoom(channelID)
+	if !exists || len(users) == 0 {
+		log.Printf("No users found in room: %s", room)
+		return
+	}
 
-	for _, userID := range users {
+	messageBytes, err := encodeMessage(msg)
+	if err != nil {
+		log.Printf("Error encoding message: %v", err)
+		return
+	}
 
-		if conn, ok := helpers.GetConnection(userID); ok {
-			if err := conn.WriteJSON(msg); err != nil {
-				// handle error
-				fmt.Printf("error in writing to connection")
-				conn.Close()
-				helpers.RemoveConnection(userID)
-			}
+	for userID, conn := range users {
+		if err := conn.WriteMessage(websocket.TextMessage, messageBytes); err != nil {
+			log.Printf("Error writing to user %d: %v", userID, err)
+			s.location.RemoveUserFromRoom(channelID, userID)
+			conn.Close()
 		}
 	}
 }
 
-func (s *wsService) SendMessage(c context.Context, cl *models.Client, message models.Message) {
-	// ctx, cancel := context.WithTimeout(c, s.timeout)
-	// defer cancel()
+func (s *wsService) SendMessage(c context.Context, cl *models.Client, message *models.Message) {
+	message.ID, _ = helpers.GenerateID()
+	fmt.Println("checking message", message)
+	s.Broadcast(c, cl.RoomName, cl.ChannelID, message)
+	s.pubsubrepo.PublishMessage(c, cl.RoomName, cl.ChannelID, message)
+	kafka.ProduceToKafka(*message)
+}
 
-	s.pubsubrepo.PublishMessage(c, cl.RoomID, &message)
+func (s *wsService) HeartBeat(c context.Context, cl *models.Client, msg *models.Message) {
+	msg.Content = "PONG"
+	response := map[string]interface{}{
+		"type":    "heartbeat",
+		"message": "PONG",
+	}
+	if err := cl.Conn.WriteJSON(response); err != nil {
+		log.Printf("Error sending heartbeat: %v", err)
+	}
+	// Optionally publish heartbeat messages to the pubsub
+	s.pubsubrepo.PublishMessage(c, "Heartbeat", -123, msg)
+}
+
+func encodeMessage(msg *models.Message) ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := json.NewEncoder(&buf)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(msg); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }

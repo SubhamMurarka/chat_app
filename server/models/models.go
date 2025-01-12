@@ -1,53 +1,31 @@
 package models
 
-import "github.com/gorilla/websocket"
-
-type User struct {
-	ID       int64  `json:"id" db:"id"`
-	Username string `json:"username" db:"username"`
-	Email    string `json:"email" db:"email"`
-	Password string `json:"password" db:"password"`
-}
-
-type CreateUserReq struct {
-	Username string `json:"username" db:"username"`
-	Email    string `json:"email" db:"email"`
-	Password string `json:"password" db:"password"`
-}
-
-type CreateUserRes struct {
-	ID       string `json:"id" db:"id"`
-	Username string `json:"username" db:"username"`
-	Email    string `json:"email" db:"email"`
-}
-
-type LoginUserReq struct {
-	Email    string `json:"email" db:"email"`
-	Password string `json:"password" db:"password"`
-}
-
-type LoginUserRes struct {
-	ID       string `json:"id" db:"id"`
-	Username string `json:"username" db:"username"`
-	Token    string `json:"token"`
-}
+import (
+	"github.com/gorilla/websocket"
+)
 
 type Client struct {
-	Conn     *websocket.Conn
-	Message  *Message
-	ID       string `json:"id"`
-	RoomID   string `json:"roomid"`
-	Username string `json:"username"`
+	Conn      *websocket.Conn
+	ClientID  int64  `json:"id"`
+	ChannelID int64  `json:"roomid"`
+	UserName  string `json:"username"`
+	RoomName  string `json:"roomname"`
 }
 
 type Message struct {
-	Content     string   `json:"content"`
-	RoomID      string   `json:"roomId"`
-	Username    string   `json:"username"`
-	UserID      string   `json:"userid"`
-	Server      string   `json:"server"`
-	MessageType string   `json:"messagetype"`
-	ImageUrl    []string `json:"imageurl,omitempty"`
+	ID          uint64 `json:"id,omitempty"`
+	Content     string `json:"content,omitempty"`
+	Server      string `json:"-"`
+	UserID      int64  `json:"user_id,omitempty"`
+	ChannelID   int64  `json:"channel_id,omitempty"`
+	MessageType string `json:"message_type" validate:"required"` //text, images etc
+	EventType   string `json:"event_type" validate:"required"`   //joinroom, chat, heartbeat
+	MediaID     string `json:"media_id,omitempty"`
 }
 
-type MessageHandlerCallbackType func(room string, message *Message)
+type Member struct {
+	conn      *websocket.Conn
+	channelid int64
+}
+
+type MessageHandlerCallbackType func(room string, channel_id int64, message *Message)

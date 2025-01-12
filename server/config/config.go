@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 )
 
@@ -15,6 +14,11 @@ type AppConfig struct {
 	PostgresDatabase string
 	JwtSecret        string
 	ServerPort       string
+	KafkaHost        string
+	KafkaPort        string
+	KafkaTopic       string
+	ServerID         string
+	AwsRegion        string
 }
 
 var Config AppConfig
@@ -31,11 +35,16 @@ func init() {
 		PostgresUser:     os.Getenv("POSTGRES_USER"),
 		PostgresPassword: os.Getenv("POSTGRES_PASSWORD"),
 		PostgresDatabase: os.Getenv("POSTGRES_DATABASE"),
+		KafkaHost:        os.Getenv("KAFKA_HOST"),
+		KafkaPort:        os.Getenv("KAFKA_PORT"),
+		KafkaTopic:       os.Getenv("KAFKA_TOPIC"),
+		ServerID:         "12345",
+		AwsRegion:        os.Getenv("AWS_REGION"),
 	}
 
-	if Config.RedisHost == "" || Config.PostgresHost == "" {
-		log.Fatal("Environment variables not set")
-	}
+	// if Config.RedisHost == "" || Config.PostgresHost == "" {
+	// 	log.Fatal("Environment variables not set")
+	// }
 }
 
 // to explicity define values for variables if value not set in .env

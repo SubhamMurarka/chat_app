@@ -24,3 +24,14 @@ redisinit:
 
 
 .PHONY: postgresinit createdb postgres dropdb migrateup migratedown localstackinit redisinit
+
+
+
+
+
+
+
+
+
+
+migrate -path DB/migration -database "postgresql://root:password@localhost:5435/chatmanager?sslmode=disable" -verbose up
