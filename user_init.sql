@@ -19,7 +19,7 @@ CREATE TABLE "memberships" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE,
     "channel_id" BIGINT NOT NULL REFERENCES "channels" ("id") ON DELETE CASCADE,
-    "online_until" TIMESTAMP, 
+    "online_until" TIMESTAMP NOT NULL DEFAULT current_timestamp, 
     "joined_at" TIMESTAMP NOT NULL DEFAULT current_timestamp,
     UNIQUE ("user_id", "channel_id") 
 );

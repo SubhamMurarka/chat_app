@@ -1,0 +1,236 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "22181:2181"
+    restart: always
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    depends_on:
+    - zookeeper
+    ports:
+      - "29092:29092"
+    restart: always
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/kafka/9092' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
+  postgres_user:
+    image: postgres:latest
+    container_name: postgres_user_db
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./user_init.sql:/docker-entrypoint-initdb.d/user_init.sql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_msg_shard0:
+    image: postgres:latest
+    container_name: postgres_msg_shard0_db
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: msg_shard0
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./msg_init.sql:/docker-entrypoint-initdb.d/msg_init.sql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_msg_shard1:
+    image: postgres:latest
+    container_name: postgres_msg_shard1_db
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: msg_shard1
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./msg_init.sql:/docker-entrypoint-initdb.d/msg_init.sql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:latest
+    container_name: redis_service
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  userservice:
+    build:
+      context: ./User
+      dockerfile: Dockerfile
+    container_name: userservice1
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres_msg_shard0:
+        condition: service_healthy
+      postgres_msg_shard1:
+        condition: service_healthy
+      postgres_user:
+        condition: service_healthy
+    restart: always
+    ports:
+      - "8081:8081"
+    env_file:
+      - sample.env
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://userservice1:8081/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+
+  chatservice:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: chatservice1
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: always
+    ports:
+      - "8082:8082"
+    env_file:
+      - sample.env
+    healthcheck:
+        test: curl --fail http://chatservice:8082/health || exit 1
+        interval: 10s
+        timeout: 10s
+        retries: 3
+        start_period: 60s
+
+  chatservicesecond:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: chatservice2
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: always
+    ports:
+      - "8084:8082"
+    env_file:
+      - sample.env
+    healthcheck:
+        test: curl --fail http://chatservicesecond:8082/health || exit 1
+        interval: 10s
+        timeout: 10s
+        retries: 3
+        start_period: 60s
+
+  imageservice:
+    build:
+      context: ./ImageUpload
+      dockerfile: Dockerfile
+    container_name: imageservice1
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+    ports:
+      - "8083:8083"
+    env_file:
+      - sample.env
+    healthcheck:
+          test: curl --fail http://imageservice:8083/health || exit 1
+          interval: 10s
+          timeout: 10s
+          retries: 3
+          start_period: 60s
+
+  heartbeatservice:
+    build:
+      context: ./Heartbeat
+      dockerfile: Dockerfile
+    container_name: heartbeatservice1
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+    env_file:
+      - sample.env
+
+  kafkaconsumers:
+    build:
+      context: ./KafkaConsumer
+      dockerfile: Dockerfile
+    container_name: kafkaconsumer1
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres_msg_shard0:
+        condition: service_healthy
+      postgres_msg_shard1:
+        condition: service_healthy
+    restart: always
+    env_file:
+      - sample.env
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./Nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: always
+    depends_on:
+      chatservice:
+        condition: service_healthy
+      chatservicesecond:
+        condition: service_healthy
+      imageservice:
+        condition: service_healthy
+      userservice:
+        condition: service_healthy

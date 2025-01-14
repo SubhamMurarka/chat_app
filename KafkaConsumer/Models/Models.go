@@ -1,13 +1,12 @@
 package models
 
-import "time"
-
 type Message struct {
-	ID          int64     `json:"id,omitempty"`
-	Content     string    `json:"content,omitempty"`
-	UserID      int64     `json:"user_id,omitempty"`
-	ChannelID   int64     `json:"channel_id,omitempty"`
-	MessageType string    `json:"message_type" validate:"required"` //text, images etc
-	MediaID     string    `json:"media_id,omitempty"`
-	Created_At  time.Time `json:"created_at"`
+	ID          uint64 `json:"id"`
+	Content     string `json:"content,omitempty"`
+	Server      string `json:"server"`
+	UserID      int64  `json:"user_id"`
+	ChannelID   int64  `json:"channel_id"`
+	MessageType string `json:"message_type"` //text, images etc
+	EventType   string `json:"event_type"`   //joinroom, chat, heartbeat
+	MediaID     string `json:"media_id,omitempty"`
 }

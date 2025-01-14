@@ -9,8 +9,8 @@ import (
 )
 
 type RepoInterface interface {
-	GetNewMessages(ctx context.Context, channelID int64) ([]models.Message, error)
-	PaginationMessages(ctx context.Context, channelID int64, lastid uint64) ([]models.Message, error)
+	GetNewMessages(ctx context.Context, channelID int64) ([]models.MessageOP, error)
+	PaginationMessages(ctx context.Context, channelID int64, lastid uint64) ([]models.MessageOP, error)
 }
 
 type repo struct {
@@ -23,7 +23,7 @@ func NewRepo(shards []*pgxpool.Pool) RepoInterface {
 	}
 }
 
-func (r *repo) GetNewMessages(ctx context.Context, channelID int64) ([]models.Message, error) {
+func (r *repo) GetNewMessages(ctx context.Context, channelID int64) ([]models.MessageOP, error) {
 	shard := r.determineShard(channelID) // Assuming you determine the shard based on channel ID or other criteria
 
 	query := `
@@ -40,9 +40,9 @@ func (r *repo) GetNewMessages(ctx context.Context, channelID int64) ([]models.Me
 	}
 	defer rows.Close()
 
-	var messages []models.Message
+	var messages []models.MessageOP
 	for rows.Next() {
-		var msg models.Message
+		var msg models.MessageOP
 		if err := rows.Scan(&msg.ID, &msg.ChannelID, &msg.UserID, &msg.Content, &msg.MediaID, &msg.MessageType, &msg.Created_At); err != nil {
 			return nil, err
 		}
@@ -55,7 +55,7 @@ func (r *repo) GetNewMessages(ctx context.Context, channelID int64) ([]models.Me
 	return messages, nil
 }
 
-func (r *repo) PaginationMessages(ctx context.Context, channelID int64, lastid uint64) ([]models.Message, error) {
+func (r *repo) PaginationMessages(ctx context.Context, channelID int64, lastid uint64) ([]models.MessageOP, error) {
 	shard := r.determineShard(channelID)
 
 	query := `
@@ -72,9 +72,9 @@ func (r *repo) PaginationMessages(ctx context.Context, channelID int64, lastid u
 	}
 	defer rows.Close()
 
-	var messages []models.Message
+	var messages []models.MessageOP
 	for rows.Next() {
-		var msg models.Message
+		var msg models.MessageOP
 		if err := rows.Scan(&msg.ID, &msg.ChannelID, &msg.UserID, &msg.Content, &msg.MediaID, &msg.MessageType, &msg.Created_At); err != nil {
 			return nil, err
 		}

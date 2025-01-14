@@ -2,8 +2,10 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log"
 
+	"github.com/SubhamMurarka/chat_app/server/config"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -14,7 +16,7 @@ type RedisDatabase struct {
 
 func NewRedisDatabase() (*RedisDatabase, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     fmt.Sprintf("%s:%s", config.Config.RedisHost, config.Config.RedisPort),
 		Password: "",
 		DB:       0,
 		PoolSize: 5,

@@ -9,6 +9,7 @@ import (
 	"github.com/SubhamMurarka/chat_app/User/Services"
 	util "github.com/SubhamMurarka/chat_app/User/Util"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type Handler struct {
@@ -28,9 +29,17 @@ func NewUserHandler(s Services.UserService, r Services.RoomService, m Services.M
 func (h *Handler) CreateUser(c *gin.Context) {
 	var u models.CreateUserReq
 
+	var validate = validator.New()
+
 	if err := c.ShouldBindJSON(&u); err != nil {
 		log.Printf("Error binding : %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": util.ErrInvalidRequest})
+		return
+	}
+
+	if validationerr := validate.Struct(&u); validationerr != nil {
+		log.Printf("Error binding : %v", validationerr)
+		c.JSON(http.StatusBadRequest, gin.H{"error": validationerr})
 		return
 	}
 
@@ -46,9 +55,17 @@ func (h *Handler) CreateUser(c *gin.Context) {
 func (h *Handler) Login(c *gin.Context) {
 	var user models.LoginUserReq
 
+	var validate = validator.New()
+
 	if err := c.ShouldBindJSON(&user); err != nil {
 		log.Printf("Error binding : %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": util.ErrInvalidRequest})
+		return
+	}
+
+	if validationerr := validate.Struct(&user); validationerr != nil {
+		log.Printf("Error binding : %v", validationerr)
+		c.JSON(http.StatusBadRequest, gin.H{"error": validationerr})
 		return
 	}
 
@@ -64,9 +81,17 @@ func (h *Handler) Login(c *gin.Context) {
 func (h *Handler) JoinRoom(c *gin.Context) {
 	var room models.Room
 
+	var validate = validator.New()
+
 	if err := c.ShouldBindJSON(&room); err != nil {
 		log.Printf("Error binding : %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": util.ErrInvalidRequest})
+		return
+	}
+
+	if validationerr := validate.Struct(&room); validationerr != nil {
+		log.Printf("Error binding : %v", validationerr)
+		c.JSON(http.StatusBadRequest, gin.H{"error": validationerr})
 		return
 	}
 
@@ -114,11 +139,20 @@ func (h *Handler) GetAllUserRoom(c *gin.Context) {
 func (h *Handler) CreateRoom(c *gin.Context) {
 	var room models.Room
 
+	var validate = validator.New()
+
 	if err := c.ShouldBindJSON(&room); err != nil {
 		log.Printf("Error binding : %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": util.ErrInvalidRequest})
 		return
 	}
+
+	if validationerr := validate.Struct(&room); validationerr != nil {
+		log.Printf("Error binding : %v", validationerr)
+		c.JSON(http.StatusBadRequest, gin.H{"error": validationerr})
+		return
+	}
+
 	id, err := h.roomSvc.AddRoom(c, room.RoomName, room.Typ)
 	if err != nil {
 		respondWithError(c, err)
@@ -129,10 +163,6 @@ func (h *Handler) CreateRoom(c *gin.Context) {
 		RoomName: room.RoomName,
 		RoomID:   id,
 		Typ:      room.Typ,
-	}
-
-	if err != nil {
-		respondWithError(c, err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"New Room": roomres})
@@ -163,11 +193,19 @@ func (h *Handler) GetMessages(c *gin.Context) {
 
 	var member models.Members
 
-	var msg []models.Message
+	var validate = validator.New()
+
+	var msg []models.MessageOP
 
 	if err := c.ShouldBindJSON(&member); err != nil {
 		log.Printf("Error binding : %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": util.ErrInvalidRequest})
+		return
+	}
+
+	if validationerr := validate.Struct(&member); validationerr != nil {
+		log.Printf("Error binding : %v", validationerr)
+		c.JSON(http.StatusBadRequest, gin.H{"error": validationerr})
 		return
 	}
 

@@ -93,11 +93,13 @@ func (r *pubsubRepository) listenMessages() {
 }
 
 func (r *pubsubRepository) PublishMessage(c context.Context, room string, channel_id int64, msg *models.Message) {
+
 	message, err := json.Marshal(msg)
 	if err != nil {
 		fmt.Println("Error marshalling message: ", err)
 		return
 	}
+	fmt.Println("messages : ", message)
 
 	r.redisClient.Publish(c, room, message)
 }

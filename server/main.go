@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/SubhamMurarka/chat_app/server/AbuseMasking"
+	"github.com/SubhamMurarka/chat_app/server/config"
 	"github.com/SubhamMurarka/chat_app/server/db"
 	"github.com/SubhamMurarka/chat_app/server/handlers"
 	"github.com/SubhamMurarka/chat_app/server/helpers"
@@ -38,5 +39,6 @@ func main() {
 
 	routes.InitRouter(wsHandler)
 
-	routes.Start("0.0.0.0:8081")
+	addr := fmt.Sprintf("%s:%s", config.Config.ServerHost, config.Config.ServerPort)
+	routes.Start(addr)
 }

@@ -2,8 +2,10 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log"
 
+	"github.com/SubhamMurarka/chat_app/User/Config"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -35,8 +37,9 @@ func getConfig(url string) *pgxpool.Pool {
 }
 
 func NewSQLDatabase() (*SQLDatabase, error) {
+	commonstring := fmt.Sprintf("postgres://%s:%s@", Config.Config.PostgresUser, Config.Config.PostgresPassword)
 
-	pgPool := getConfig("postgres://root:password@localhost:5432/user?sslmode=disable")
+	pgPool := GetConfig(commonstring + Config.Config.PostgresHost3 + ":" + Config.Config.PostgresPort + "/user?sslmode=disable")
 
 	return &SQLDatabase{db: pgPool}, nil
 }

@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/http"
 
+	"github.com/SubhamMurarka/chat_app/User/Config"
 	db "github.com/SubhamMurarka/chat_app/User/DB"
 	Handler "github.com/SubhamMurarka/chat_app/User/Handlers"
 	middleware "github.com/SubhamMurarka/chat_app/User/Middleware"
@@ -51,8 +54,11 @@ func main() {
 	r := gin.Default()
 
 	//routes
-	r.POST("/signup", Handler.CreateUser)
-	r.POST("/login", Handler.Login)
+	r.POST("/user/signup", Handler.CreateUser)
+	r.POST("/user/login", Handler.Login)
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"Health": "Ready"})
+	})
 
 	r.Use(middleware.Authenticate())
 	r.GET("/user/joinroom", Handler.JoinRoom)
@@ -61,5 +67,7 @@ func main() {
 	r.GET("/user/members", Handler.GetAllMembers)
 	r.GET("/user/history", Handler.GetMessages)
 
-	r.Run("0.0.0.0:8085")
+	addr := fmt.Sprintf("%s:%s", Config.Config.ServerHost, Config.Config.ServerPort)
+	fmt.Println("port : ", Config.Config.ServerPort)
+	r.Run(addr)
 }

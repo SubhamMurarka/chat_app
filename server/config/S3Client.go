@@ -3,11 +3,13 @@ package config
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
@@ -15,10 +17,19 @@ var FileContent string
 
 func ConnectS3() {
 
-	bucketName := "shubhamgochat"
-	objectKey := "AbuseMasker/Badwords.txt"
+	bucketName := Config.BucketName
+	objectKey := Config.ObjectKey
 
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if objectKey == "" {
+		fmt.Println("object key not found")
+	} else {
+		fmt.Println(objectKey)
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(Config.Region),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(Config.AccessKey, Config.SecretAccess, "")),
+	)
 	if err != nil {
 		log.Fatalf("Unable to load AWS SDK config: %v", err)
 	}

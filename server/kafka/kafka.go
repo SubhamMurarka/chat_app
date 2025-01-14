@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/SubhamMurarka/chat_app/server/config"
@@ -33,6 +34,8 @@ func ProduceToKafka(message models.Message) {
 		Brokers: []string{kafkaConfig.Host + ":" + kafkaConfig.Port},
 		Topic:   kafkaConfig.Topic,
 	})
+
+	fmt.Println("kafka message : ", message)
 
 	defer w.Close()
 

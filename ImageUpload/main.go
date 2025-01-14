@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/SubhamMurarka/chat_app/Image/Config"
 	"github.com/SubhamMurarka/chat_app/Image/S3"
@@ -21,6 +22,9 @@ func main() {
 
 	r := gin.Default()
 
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"Health": "Ready"})
+	})
 	r.Use(util.Authenticate())
 	r.GET("/img/url", S3.ConnectS3)
 

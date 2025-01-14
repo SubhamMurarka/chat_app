@@ -4,16 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/SubhamMurarka/chat_app/server/config"
 	"github.com/golang-jwt/jwt"
 
 	"github.com/gin-gonic/gin"
 )
 
-var SECRET_KEY string = os.Getenv("SECRET_KEY")
+var SECRET_KEY string = config.Config.JwtSecret
 
 type tokenCreateParams struct {
 	Username string

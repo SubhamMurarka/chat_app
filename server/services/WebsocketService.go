@@ -14,6 +14,7 @@ import (
 	"github.com/SubhamMurarka/chat_app/server/models"
 	"github.com/SubhamMurarka/chat_app/server/repositories"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/websocket"
 )
 
@@ -59,10 +60,17 @@ func (s *wsService) HandleWebSocket(c *gin.Context, cl *models.Client) {
 		message.ChannelID = cl.ChannelID
 		message.UserID = cl.ClientID
 
+		var validate = validator.New()
+
 		log.Println("Waiting for client message...")
 		if err := cl.Conn.ReadJSON(&message); err != nil {
 			log.Printf("Error reading message: %v", err)
 			break
+		}
+
+		if validationerr := validate.Struct(&message); validationerr != nil {
+			cl.Conn.WriteJSON(validationerr)
+			continue
 		}
 
 		log.Printf("Received message: %v", message.Content)

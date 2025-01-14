@@ -2,9 +2,9 @@ package Util
 
 import (
 	"log"
-	"os"
 	"time"
 
+	"github.com/SubhamMurarka/chat_app/User/Config"
 	"github.com/golang-jwt/jwt"
 )
 
@@ -15,7 +15,7 @@ type tokenCreateParams struct {
 	jwt.StandardClaims
 }
 
-var SECRET_KEY string = os.Getenv("SECRET_KEY")
+var SECRET_KEY string = Config.Config.JwtSecret
 
 func GenerateAllTokens(userID string, username string, email string) (signedToken string, err error) {
 	claims := &tokenCreateParams{

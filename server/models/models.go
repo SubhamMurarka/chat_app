@@ -15,11 +15,11 @@ type Client struct {
 type Message struct {
 	ID          uint64 `json:"id,omitempty"`
 	Content     string `json:"content,omitempty"`
-	Server      string `json:"-"`
+	Server      string `json:"server"`
 	UserID      int64  `json:"user_id,omitempty"`
 	ChannelID   int64  `json:"channel_id,omitempty"`
-	MessageType string `json:"message_type" validate:"required"` //text, images etc
-	EventType   string `json:"event_type" validate:"required"`   //joinroom, chat, heartbeat
+	MessageType string `json:"message_type" validate:"required,oneof=TEXT MEDIA"`   //text, images etc
+	EventType   string `json:"event_type" validate:"required,oneof=chat heartbeat"` //joinroom, chat, heartbeat
 	MediaID     string `json:"media_id,omitempty"`
 }
 

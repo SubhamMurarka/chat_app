@@ -12,7 +12,7 @@ import (
 var Client *redis.Client
 
 func NewRedisDatabase() error {
-	client := redis.NewClient(&redis.Options{
+	Client = redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", Config.Conf.RedisHost, Config.Conf.RedisPort),
 		Password: "",
 		DB:       0,
@@ -20,10 +20,12 @@ func NewRedisDatabase() error {
 	})
 
 	ctx := context.Background()
-	if err := client.Ping(ctx).Err(); err != nil {
+	if err := Client.Ping(ctx).Err(); err != nil {
 		log.Fatalf("error connecting redis")
 		return err
 	}
+
+	log.Printf("Redis Connected!")
 
 	return nil
 }

@@ -2,8 +2,10 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log"
 
+	"github.com/SubhamMurarka/chat_app/User/Config"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -33,10 +35,12 @@ func GetConfig(url string) *pgxpool.Pool {
 func NewMsgDatabase() (*MsgDatabase, error) {
 	shards := make([]*pgxpool.Pool, 2)
 
-	pgPool0 := GetConfig("postgres://root:password@localhost:5433/msg_shard0?sslmode=disable")
-	pgPool1 := GetConfig("postgres://root:password@localhost:5434/msg_shard1?sslmode=disable")
+	commonstring := fmt.Sprintf("postgres://%s:%s@", Config.Config.PostgresUser, Config.Config.PostgresPassword)
+	pgPool0 := GetConfig(commonstring + Config.Config.PostgresHost1 + ":" + Config.Config.PostgresPort + "/msg_shard0?sslmode=disable")
+	pgPool1 := GetConfig(commonstring + Config.Config.PostgresHost2 + ":" + Config.Config.PostgresPort + "/msg_shard1?sslmode=disable")
 
-	shards = append(shards, pgPool0, pgPool1)
+	shards[0] = pgPool0
+	shards[1] = pgPool1
 
 	return &MsgDatabase{db: shards}, nil
 }
