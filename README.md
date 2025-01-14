@@ -1,6 +1,6 @@
 # Chat Application
 
-#API Documentation
+# API Documentation
 
 https://documenter.getpostman.com/view/28829311/2sAYQXoYKJ
 
