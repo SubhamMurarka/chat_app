@@ -1,10 +1,5 @@
 # Chat Application
 
-# API Documentation
-
-https://documenter.getpostman.com/view/28829311/2sAYQXoYKJ
-
-
 # Chat Service
 
 ### Efficient and Secure Real-Time Messaging
@@ -39,6 +34,9 @@ Our chat service architecture incorporates several optimizations to enhance thro
 
 These optimizations are crucial for maintaining high performance and reliability as our chat service scales up to accommodate more users and channels.
 
+# API Documentation
+
+https://documenter.getpostman.com/view/28829311/2sAYQXoYKJ
 
 ## File Upload System
 
