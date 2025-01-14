@@ -38,6 +38,10 @@ These optimizations are crucial for maintaining high performance and reliability
 
 https://documenter.getpostman.com/view/28829311/2sAYQXoYKJ
 
+## Chat Server
+
+[Chat Server Postman - websocket](https://github.com/user-attachments/assets/358f2296-9065-4e35-b85a-01fd70c22f74)
+
 # Tech Stack
 ![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![Gin](https://img.shields.io/badge/Gin-00ADD8?style=for-the-badge&logo=go&logoColor=white)
