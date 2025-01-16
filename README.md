@@ -92,5 +92,5 @@ To run the chat app backend on your machine:
 
 3. Run with Docker
 ```bash
-docker-compose up -d --build
+ docker-compose up -d --build
 
