@@ -79,3 +79,18 @@ The Heartbeat Service in our chat application plays a crucial role in managing c
 - **Connection Monitoring**: The chat server is also subscribed to a Redis channel that notifies about TTL expirations (`__keyevent@0__:expired`). If a user's TTL expires (indicating inactivity), the chat server receives this expiration event and terminates the inactive connection, ensuring system resources are efficiently managed.
 
   ![Chat Server (3)](https://github.com/user-attachments/assets/75570a91-31bb-47c2-a462-7b95ba0d5389)
+
+# 🔧 Setup Instructions
+
+To run the chat_app on your machine:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/SubhamMurarka/chat_app.git
+
+2. Configure sample.env file.
+
+3. Run with Docker
+```bash
+docker-compose up -d --build
+
