@@ -82,7 +82,7 @@ The Heartbeat Service in our chat application plays a crucial role in managing c
 
 # 🔧 Setup Instructions
 
-To run the chat_app on your machine:
+To run the chat app backend on your machine:
 
 1. Clone the repository:
    ```bash
