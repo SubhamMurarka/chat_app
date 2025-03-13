@@ -234,3 +234,16 @@ services:
         condition: service_healthy
       userservice:
         condition: service_healthy
+
+  ollama:
+    build:
+      context: ./llm
+      dockerfile: Dockerfile
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  ollama_data:
+

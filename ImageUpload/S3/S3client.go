@@ -29,7 +29,8 @@ func init() {
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(Config.Conf.AccessKey, Config.Conf.SecretAccess, "")),
 	)
 	if err != nil {
-		log.Fatalf("Unable to load AWS SDK config: %v", err)
+		log.Printf("Unable to load AWS SDK config: %v", err)
+		return
 	}
 
 	s3Client = s3.NewFromConfig(cfg)

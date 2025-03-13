@@ -22,6 +22,7 @@ func ConnectS3() {
 
 	if objectKey == "" {
 		fmt.Println("object key not found")
+		return
 	} else {
 		fmt.Println(objectKey)
 	}
@@ -31,7 +32,8 @@ func ConnectS3() {
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(Config.AccessKey, Config.SecretAccess, "")),
 	)
 	if err != nil {
-		log.Fatalf("Unable to load AWS SDK config: %v", err)
+		log.Printf("Unable to load AWS SDK config: %v", err)
+		return
 	}
 
 	client := s3.NewFromConfig(cfg)
@@ -41,14 +43,16 @@ func ConnectS3() {
 		Key:    aws.String(objectKey),
 	})
 	if err != nil {
-		log.Fatalf("Unable to get object: %v", err)
+		log.Printf("Unable to get object: %v", err)
+		return
 	}
 
 	defer output.Body.Close()
 
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, output.Body); err != nil {
-		log.Fatalf("Unable to read object content: %v", err)
+		log.Printf("Unable to read object content: %v", err)
+		return
 	}
 
 	FileContent = buf.String()

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/SubhamMurarka/chat_app/server/AbuseMasking"
 	"github.com/SubhamMurarka/chat_app/server/config"
@@ -13,10 +14,13 @@ import (
 	"github.com/SubhamMurarka/chat_app/server/kafka"
 	"github.com/SubhamMurarka/chat_app/server/models"
 	"github.com/SubhamMurarka/chat_app/server/repositories"
+	"github.com/SubhamMurarka/chat_app/server/util"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/websocket"
 )
+
+var LLMID uint64
 
 type WsService interface {
 	JoinRoomService(c context.Context, cl *models.Client, message *models.Message)
@@ -142,6 +146,22 @@ func (s *wsService) SendMessage(c context.Context, cl *models.Client, message *m
 	s.Broadcast(c, cl.RoomName, cl.ChannelID, message)
 	s.pubsubrepo.PublishMessage(c, cl.RoomName, cl.ChannelID, message)
 	kafka.ProduceToKafka(*message)
+	if strings.HasPrefix(message.Content, "@superchat") {
+		response := util.GetResponseFromLLM(message.Content)
+		ID, _ := helpers.GenerateID()
+		log.Printf("Response from LLM")
+		llmMessage := &models.Message{
+			ID:        ID,
+			Content:   response,
+			Server:    config.Config.ServerID,
+			ChannelID: message.ChannelID,
+			UserID:    123,
+			EventType: "chat",
+		}
+		s.Broadcast(c, cl.RoomName, cl.ChannelID, llmMessage)
+		s.pubsubrepo.PublishMessage(c, cl.RoomName, cl.ChannelID, llmMessage)
+		kafka.ProduceToKafka(*llmMessage)
+	}
 }
 
 func (s *wsService) HeartBeat(c context.Context, cl *models.Client, msg *models.Message) {
